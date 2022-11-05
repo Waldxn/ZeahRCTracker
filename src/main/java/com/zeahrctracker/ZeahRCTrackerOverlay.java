@@ -1,6 +1,5 @@
 package com.zeahrctracker;
 
-import net.runelite.api.Client;
 import net.runelite.api.MenuAction;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
@@ -17,7 +16,6 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
 
     static final String RC_RESET = "Reset";
 
-    private final Client client;
     private final ZeahRCTrackerPlugin plugin;
     private final ZeahRCTrackerConfig config;
 
@@ -26,10 +24,9 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
 
 
     @Inject
-    private ZeahRCTrackerOverlay(Client client, ZeahRCTrackerPlugin plugin, ZeahRCTrackerConfig config) {
+    private ZeahRCTrackerOverlay(ZeahRCTrackerPlugin plugin, ZeahRCTrackerConfig config) {
         super(plugin);
         setPosition(OverlayPosition.TOP_LEFT);
-        this.client = client;
         this.plugin = plugin;
         this.config = config;
         getMenuEntries().add(new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY, RC_RESET, "Runecrafting Overlay"));
