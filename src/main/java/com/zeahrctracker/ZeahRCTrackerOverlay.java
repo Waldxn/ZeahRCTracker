@@ -1,5 +1,6 @@
 package com.zeahrctracker;
 
+import net.runelite.api.Client;
 import net.runelite.api.MenuAction;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
@@ -16,6 +17,7 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
 
     static final String RC_RESET = "Reset";
 
+    private final Client client;
     private final ZeahRCTrackerPlugin plugin;
     private final ZeahRCTrackerConfig config;
 
@@ -24,9 +26,10 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
 
 
     @Inject
-    private ZeahRCTrackerOverlay(ZeahRCTrackerPlugin plugin, ZeahRCTrackerConfig config) {
+    private ZeahRCTrackerOverlay(Client client, ZeahRCTrackerPlugin plugin, ZeahRCTrackerConfig config) {
         super(plugin);
         setPosition(OverlayPosition.TOP_LEFT);
+        this.client = client;
         this.plugin = plugin;
         this.config = config;
         getMenuEntries().add(new OverlayMenuEntry(MenuAction.RUNELITE_OVERLAY, RC_RESET, "Runecrafting Overlay"));
@@ -46,7 +49,7 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
                         .color(Color.BLUE)
                         .build());
                 panelComponent.getChildren().add(LineComponent.builder()
-                        .left("Bloods crafted:")
+                        .left("Bloods Crafted:")
                         .right(numberFormat(plugin.getCraftedRunes(565)))
                         .build());
                 panelComponent.getChildren().add(LineComponent.builder()
@@ -55,7 +58,7 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
                         .rightColor(Color.green)
                         .build());
                 panelComponent.getChildren().add(LineComponent.builder()
-                        .left("Souls crafted:")
+                        .left("Souls Crafted:")
                         .right(numberFormat(plugin.getCraftedRunes(566)))
                         .build());
                 panelComponent.getChildren().add(LineComponent.builder()
@@ -70,7 +73,7 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
                     .color(Color.RED)
                     .build());
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Bloods crafted:")
+                    .left("Bloods Crafted:")
                     .right(numberFormat(plugin.getCraftedRunes(565)))
                     .build());
             panelComponent.getChildren().add(LineComponent.builder()
@@ -84,7 +87,7 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
                     .color(Color.CYAN)
                     .build());
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Souls crafted:")
+                    .left("Souls Crafted:")
                     .right(numberFormat(plugin.getCraftedRunes(566)))
                     .build());
             panelComponent.getChildren().add(LineComponent.builder()
@@ -104,16 +107,16 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
     private String convertGP(double number) {
         String string = numberFormat(number);
         if (number >= 100000 && number < 1000000) {
-            return string.substring(0, 2) + "K ";
+            return string.substring(0, 3) + "K ";
         } else if (number >= 1000000 && number < 10000000) {
-            string = string.substring(0, 2);
+            string = string.substring(0, 3);
             StringBuilder sb = new StringBuilder(string);
             sb.insert(1, ".");
             sb.append("M ");
             sb.deleteCharAt(4);
             return sb.toString();
         } else if (number >= 10000000) {
-            string = string.substring(0, 2);
+            string = string.substring(0, 3);
             StringBuilder sb = new StringBuilder(string);
             sb.insert(2, ".");
             sb.append("M ");

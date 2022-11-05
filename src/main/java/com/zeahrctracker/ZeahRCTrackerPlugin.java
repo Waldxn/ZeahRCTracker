@@ -56,6 +56,9 @@ public class ZeahRCTrackerPlugin extends Plugin {
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
+        //Prevents runes being tracked falsely on login (if in zeah)
+        boolean initialLogin = false;
+
         //Set defaults
         if (getCraftedRunes(566) == null || getCraftedRunes(565) == null) {
             if (getCraftedRunes(566) == null) {
@@ -70,34 +73,26 @@ public class ZeahRCTrackerPlugin extends Plugin {
             for (int i = 0; i <= 27; i++) {
                 ItemContainer container = client.getItemContainer(InventoryID.INVENTORY);
 
-                    if (container.getItem(i) != null) {
-                        sessionTrackingCurrent.put(container.getItem(i).getId(), container.getItem(i).getQuantity());
-                    } else {
-                        sessionTrackingCurrent.put(565, 0);
-                        sessionTrackingCurrent.put(566, 0);
-                    }
-
+                if (container.getItem(i) != null) {
+                    sessionTrackingCurrent.put(container.getItem(i).getId(), container.getItem(i).getQuantity());
+                } else {
+                    sessionTrackingCurrent.put(565, 0);
+                    sessionTrackingCurrent.put(566, 0);
+                }
+                initialLogin = true;
             }
         }
-
-
-        if (event.getItemContainer().contains(565) || event.getItemContainer().contains(566)) {
-
-        }
-
 
         //Runecrafting event
         if (event.getItemContainer().contains(565) || event.getItemContainer().contains(566)) {
 
-            //Prevents tracker from including runes outside zeah
             boolean inZeah = false;
-            for (int i : client.getMapRegions()) {
-                if (i == 6715 || i == 7228) {
-                    inZeah = true;
-                    break;
-                }
+            int region = client.getLocalPlayer().getWorldLocation().getRegionID();
+            if (region == 6715 || region == 7228) {
+                inZeah = true;
             }
 
+            //Prevents tracker from including runes outside zeah
             if (!inZeah) {
                 if (event.getItemContainer().contains(565)) {
                     for (Item i : event.getItemContainer().getItems()) {
@@ -114,7 +109,7 @@ public class ZeahRCTrackerPlugin extends Plugin {
                 }
             }
 
-            if (inZeah) {
+            if (inZeah && !initialLogin) {
                 for (Item i : event.getItemContainer().getItems()) {
                     if (i.getId() == 565 && config.bloodCheckbox()) {
                         if (!(sessionTrackingCurrent.containsKey(i.getId()))) {
