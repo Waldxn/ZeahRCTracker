@@ -99,24 +99,17 @@ public class ZeahRCTrackerPlugin extends Plugin {
                             sessionTrackingCurrent.put(i.getId(), i.getQuantity());
                             setCraftedRunes(565, i.getQuantity());
                             isBloodRunecrafting = true;
-                            log.info("1 FIRED");
                         }
                         if (sessionTrackingCurrent.get(i.getId()) != i.getQuantity()) {
                             if (getCraftedRunes(565) == null) {
+                                //If config doesn't have data already, create it
                                 setCraftedRunes(565, (i.getQuantity() - sessionTrackingCurrent.get(565)));
                                 sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
-                                log.info("2 FIRED");
                             } else {
+                                //Updates the amount of runes crafted
                                 setCraftedRunes(565, (i.getQuantity() - sessionTrackingCurrent.get(565)) + getCraftedRunes(565));
-                                log.info(sessionTrackingCurrent.get(565) + " ! " + i.getQuantity() + " ! " + getCraftedRunes(565));
-
                                 sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
-                                log.info("3 FIRED");
                             }
-                        /*
-                        client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "[Zeah RC] Total blood runes crafted: " +
-                                getCraftedRunes(565), null);
-                        */
                             isBloodRunecrafting = true;
                         }
                     } else if (i.getId() == 566 && config.soulCheckbox()) {
@@ -129,9 +122,11 @@ public class ZeahRCTrackerPlugin extends Plugin {
                         }
                         if (sessionTrackingCurrent.get(i.getId()) != i.getQuantity()) {
                             if (getCraftedRunes(566) == null) {
+                                //If config doesn't have data already, create it
                                 setCraftedRunes(566, (i.getQuantity() - sessionTrackingCurrent.get(566)));
                                 sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
                             } else {
+                                //Updates the amount of runes crafted
                                 setCraftedRunes(566, (i.getQuantity() - sessionTrackingCurrent.get(566)) + getCraftedRunes(566));
                                 sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
                             }
