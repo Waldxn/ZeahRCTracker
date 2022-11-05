@@ -24,7 +24,6 @@ public class ZeahRCTrackerPlugin extends Plugin {
     public boolean isBloodRunecrafting;
     public boolean isSoulRunecrafting;
 
-    public HashMap<Integer, Integer> sessionTrackingStart;
     public HashMap<Integer, Integer> sessionTrackingCurrent;
 
     @Inject
@@ -45,7 +44,6 @@ public class ZeahRCTrackerPlugin extends Plugin {
     @Override
     protected void startUp() throws Exception {
         log.info("ZeahRCTracker by Waldxn started!");
-        sessionTrackingStart = new HashMap<>();
         sessionTrackingCurrent = new HashMap<>();
         overlayManager.add(overlay);
     }
@@ -68,20 +66,30 @@ public class ZeahRCTrackerPlugin extends Plugin {
         }
 
         //Load to hashmap on login
-        if (sessionTrackingStart.isEmpty()) {
+        if (sessionTrackingCurrent.isEmpty()) {
             for (int i = 0; i <= 27; i++) {
                 ItemContainer container = client.getItemContainer(InventoryID.INVENTORY);
-                if (container.getItem(i) != null) {
-                    sessionTrackingStart.put(container.getItem(i).getId(), container.getItem(i).getQuantity());
-                    sessionTrackingCurrent.put(container.getItem(i).getId(), container.getItem(i).getQuantity());
-                }
+
+                    if (container.getItem(i) != null) {
+                        sessionTrackingCurrent.put(container.getItem(i).getId(), container.getItem(i).getQuantity());
+                    } else {
+                        sessionTrackingCurrent.put(565, 0);
+                        sessionTrackingCurrent.put(566, 0);
+                    }
+
             }
+        }
+
+
+        if (event.getItemContainer().contains(565) || event.getItemContainer().contains(566)) {
+
         }
 
 
         //Runecrafting event
         if (event.getItemContainer().contains(565) || event.getItemContainer().contains(566)) {
 
+            //Prevents tracker from including runes outside zeah
             boolean inZeah = false;
             for (int i : client.getMapRegions()) {
                 if (i == 6715 || i == 7228) {
@@ -90,12 +98,27 @@ public class ZeahRCTrackerPlugin extends Plugin {
                 }
             }
 
+            if (!inZeah) {
+                if (event.getItemContainer().contains(565)) {
+                    for (Item i : event.getItemContainer().getItems()) {
+                        if (i.getId() == 565) {
+                            sessionTrackingCurrent.replace(565, i.getQuantity());
+                        }
+                    }
+                } else if (event.getItemContainer().contains(566)) {
+                    for (Item i : event.getItemContainer().getItems()) {
+                        if (i.getId() == 566) {
+                            sessionTrackingCurrent.replace(566, i.getQuantity());
+                        }
+                    }
+                }
+            }
+
             if (inZeah) {
                 for (Item i : event.getItemContainer().getItems()) {
                     if (i.getId() == 565 && config.bloodCheckbox()) {
-                        if (!(sessionTrackingStart.containsKey(i.getId()))) {
+                        if (!(sessionTrackingCurrent.containsKey(i.getId()))) {
                             //When a player runecrafts from a clear inventory
-                            sessionTrackingStart.put(i.getId(), 0);
                             sessionTrackingCurrent.put(i.getId(), i.getQuantity());
                             setCraftedRunes(565, i.getQuantity());
                             isBloodRunecrafting = true;
@@ -113,9 +136,8 @@ public class ZeahRCTrackerPlugin extends Plugin {
                             isBloodRunecrafting = true;
                         }
                     } else if (i.getId() == 566 && config.soulCheckbox()) {
-                        if (!(sessionTrackingStart.containsKey(i.getId()))) {
+                        if (!(sessionTrackingCurrent.containsKey(i.getId()))) {
                             //When a player runecrafts from a clear inventory
-                            sessionTrackingStart.put(i.getId(), 0);
                             sessionTrackingCurrent.put(i.getId(), i.getQuantity());
                             setCraftedRunes(566, i.getQuantity());
                             isSoulRunecrafting = true;
@@ -160,4 +182,3 @@ public class ZeahRCTrackerPlugin extends Plugin {
         return configManager.getConfig(ZeahRCTrackerConfig.class);
     }
 }
-
