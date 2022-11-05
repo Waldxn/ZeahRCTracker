@@ -2,16 +2,13 @@ package com.zeahrctracker;
 
 import com.google.inject.Provides;
 
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -24,13 +21,17 @@ import java.util.HashMap;
 )
 public class ZeahRCTrackerPlugin extends Plugin {
 
-    public boolean isrunecrafting;
+    public boolean isBloodRunecrafting;
+    public boolean isSoulRunecrafting;
 
     public HashMap<Integer, Integer> sessionTrackingStart;
     public HashMap<Integer, Integer> sessionTrackingCurrent;
 
     @Inject
     private Client client;
+
+    @Inject
+    private ConfigManager configManager;
 
     @Inject
     private OverlayManager overlayManager;
@@ -57,6 +58,16 @@ public class ZeahRCTrackerPlugin extends Plugin {
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
+        //Set defaults
+        if (getCraftedRunes(566) == null || getCraftedRunes(565) == null) {
+            if (getCraftedRunes(566) == null) {
+                setCraftedRunes(566, 0);
+            } else if (getCraftedRunes(565) == null) {
+                setCraftedRunes(565, 0);
+            }
+        }
+
+        //Load to hashmap on login
         if (sessionTrackingStart.isEmpty()) {
             for (int i = 0; i <= 27; i++) {
                 ItemContainer container = client.getItemContainer(InventoryID.INVENTORY);
@@ -66,28 +77,87 @@ public class ZeahRCTrackerPlugin extends Plugin {
                 }
             }
         }
-        if (event.getItemContainer().contains(565)) {
-            for (Item i : event.getItemContainer().getItems()) {
-                if (i.getId() == 565) {
-                    if (!(sessionTrackingStart.containsKey(i.getId())) && !client.isMenuOpen()) {
-                        //When a player runecrafts from a clear inventory
-                        sessionTrackingStart.put(i.getId(), 0);
-                        sessionTrackingCurrent.put(i.getId(), i.getQuantity());
-                        isrunecrafting = true;
-                    }
-                    if (sessionTrackingCurrent.get(i.getId()) != i.getQuantity()) {
-                        sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
+
+
+        //Runecrafting event
+        if (event.getItemContainer().contains(565) || event.getItemContainer().contains(566)) {
+
+            boolean inZeah = false;
+            for (int i : client.getMapRegions()) {
+                if (i == 6715 || i == 7228) {
+                    inZeah = true;
+                    break;
+                }
+            }
+
+            if (inZeah) {
+                for (Item i : event.getItemContainer().getItems()) {
+                    if (i.getId() == 565 && config.bloodCheckbox()) {
+                        if (!(sessionTrackingStart.containsKey(i.getId()))) {
+                            //When a player runecrafts from a clear inventory
+                            sessionTrackingStart.put(i.getId(), 0);
+                            sessionTrackingCurrent.put(i.getId(), i.getQuantity());
+                            setCraftedRunes(565, i.getQuantity());
+                            isBloodRunecrafting = true;
+                            log.info("1 FIRED");
+                        }
+                        if (sessionTrackingCurrent.get(i.getId()) != i.getQuantity()) {
+                            if (getCraftedRunes(565) == null) {
+                                setCraftedRunes(565, (i.getQuantity() - sessionTrackingCurrent.get(565)));
+                                sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
+                                log.info("2 FIRED");
+                            } else {
+                                setCraftedRunes(565, (i.getQuantity() - sessionTrackingCurrent.get(565)) + getCraftedRunes(565));
+                                log.info(sessionTrackingCurrent.get(565) + " ! " + i.getQuantity() + " ! " + getCraftedRunes(565));
+
+                                sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
+                                log.info("3 FIRED");
+                            }
+                        /*
                         client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "[Zeah RC] Total blood runes crafted: " +
                                 getCraftedRunes(565), null);
-                        isrunecrafting = true;
+                        */
+                            isBloodRunecrafting = true;
+                        }
+                    } else if (i.getId() == 566 && config.soulCheckbox()) {
+                        if (!(sessionTrackingStart.containsKey(i.getId()))) {
+                            //When a player runecrafts from a clear inventory
+                            sessionTrackingStart.put(i.getId(), 0);
+                            sessionTrackingCurrent.put(i.getId(), i.getQuantity());
+                            setCraftedRunes(566, i.getQuantity());
+                            isSoulRunecrafting = true;
+                        }
+                        if (sessionTrackingCurrent.get(i.getId()) != i.getQuantity()) {
+                            if (getCraftedRunes(566) == null) {
+                                setCraftedRunes(566, (i.getQuantity() - sessionTrackingCurrent.get(566)));
+                                sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
+                            } else {
+                                setCraftedRunes(566, (i.getQuantity() - sessionTrackingCurrent.get(566)) + getCraftedRunes(566));
+                                sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
+                            }
+                            isSoulRunecrafting = true;
+                        }
                     }
                 }
             }
         }
     }
 
-    public Integer getCraftedRunes(Integer itemId){
-        return sessionTrackingCurrent.get(itemId) - sessionTrackingStart.get(itemId);
+    private void setCraftedRunes(int itemId, double quantity) {
+        if (itemId == 565) {
+            configManager.setRSProfileConfiguration("zeahrctracker", "bloods", quantity);
+        } else if (itemId == 566) {
+            configManager.setRSProfileConfiguration("zeahrctracker", "souls", quantity);
+        }
+    }
+
+    public Double getCraftedRunes(Integer itemId) {
+        if (itemId == 565) {
+            return configManager.getRSProfileConfiguration("zeahrctracker", "bloods", double.class);
+        } else if (itemId == 566) {
+            return configManager.getRSProfileConfiguration("zeahrctracker", "souls", double.class);
+        }
+        return null;
     }
 
     @Provides
@@ -95,3 +165,4 @@ public class ZeahRCTrackerPlugin extends Plugin {
         return configManager.getConfig(ZeahRCTrackerConfig.class);
     }
 }
+

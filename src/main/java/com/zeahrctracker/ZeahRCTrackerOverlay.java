@@ -1,20 +1,17 @@
 package com.zeahrctracker;
 
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.MenuAction;
-import net.runelite.api.Skill;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.plugins.xptracker.XpTrackerService;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
-import net.runelite.http.api.item.ItemPrice;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.text.DecimalFormat;
 
 public class ZeahRCTrackerOverlay extends OverlayPanel {
 
@@ -29,8 +26,7 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
 
 
     @Inject
-    private ZeahRCTrackerOverlay(Client client,ZeahRCTrackerPlugin plugin,ZeahRCTrackerConfig config)
-    {
+    private ZeahRCTrackerOverlay(Client client, ZeahRCTrackerPlugin plugin, ZeahRCTrackerConfig config) {
         super(plugin);
         setPosition(OverlayPosition.TOP_LEFT);
         this.client = client;
@@ -40,32 +36,93 @@ public class ZeahRCTrackerOverlay extends OverlayPanel {
     }
 
     @Override
-    public Dimension render(Graphics2D graphics)
-    {
-        if (!config.bloodCheckbox())
-        {
+    public Dimension render(Graphics2D graphics) {
+        if (!config.bloodCheckbox()) {
             return null;
         }
 
 
-        if (plugin.isrunecrafting)
-        {
+        if (plugin.isBloodRunecrafting && plugin.isSoulRunecrafting) {
+            if (config.bloodCheckbox() && config.soulCheckbox()) {
+                panelComponent.getChildren().add(TitleComponent.builder()
+                        .text("Zeah RC Tracker")
+                        .color(Color.BLUE)
+                        .build());
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("Bloods crafted:")
+                        .right(numberFormat(plugin.getCraftedRunes(565)))
+                        .build());
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("Total Profit:")
+                        .right(convertGP(itemManager.getItemPrice(566) * plugin.getCraftedRunes(565)) + "gp")
+                        .rightColor(Color.green)
+                        .build());
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("Souls crafted:")
+                        .right(numberFormat(plugin.getCraftedRunes(566)))
+                        .build());
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("Total Profit:")
+                        .right(convertGP(itemManager.getItemPrice(566) * plugin.getCraftedRunes(566)) + "gp")
+                        .rightColor(Color.green)
+                        .build());
+            }
+        } else if (plugin.isBloodRunecrafting && config.bloodCheckbox()) {
+            panelComponent.getChildren().add(TitleComponent.builder()
+                    .text("Zeah RC Tracker")
+                    .color(Color.RED)
+                    .build());
+            panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Bloods crafted:")
+                    .right(numberFormat(plugin.getCraftedRunes(565)))
+                    .build());
+            panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Total Profit:")
+                    .right(convertGP(itemManager.getItemPrice(566) * plugin.getCraftedRunes(565)) + "gp")
+                    .rightColor(Color.green)
+                    .build());
+        } else if (plugin.isSoulRunecrafting && config.soulCheckbox()) {
             panelComponent.getChildren().add(TitleComponent.builder()
                     .text("Zeah RC Tracker")
                     .color(Color.CYAN)
                     .build());
-
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Bloods crafted:")
-                    .right(plugin.getCraftedRunes(565).toString())
+                    .left("Souls crafted:")
+                    .right(numberFormat(plugin.getCraftedRunes(566)))
                     .build());
-
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Total Profit:")
-                    .right(itemManager.getItemPrice(565) * plugin.getCraftedRunes(565) + "gp")
+                    .right(convertGP(itemManager.getItemPrice(566) * plugin.getCraftedRunes(566)) + "gp")
                     .rightColor(Color.green)
                     .build());
         }
         return super.render(graphics);
+    }
+
+    private String numberFormat(double number) {
+        DecimalFormat format = new DecimalFormat("0.#");
+        return format.format(number);
+    }
+
+    private String convertGP(double number) {
+        String string = numberFormat(number);
+        if (number >= 100000 && number < 1000000) {
+            return string.substring(0, 2) + "K ";
+        } else if (number >= 1000000 && number < 10000000) {
+            string = string.substring(0, 2);
+            StringBuilder sb = new StringBuilder(string);
+            sb.insert(1, ".");
+            sb.append("M ");
+            sb.deleteCharAt(4);
+            return sb.toString();
+        } else if (number >= 10000000) {
+            string = string.substring(0, 2);
+            StringBuilder sb = new StringBuilder(string);
+            sb.insert(2, ".");
+            sb.append("M ");
+            sb.deleteCharAt(4);
+            return sb.toString();
+        }
+        return string;
     }
 }
