@@ -1,10 +1,8 @@
 package com.zeahrctracker;
 
 import com.google.inject.Provides;
-
-import javax.inject.Inject;
-
 import lombok.extern.slf4j.Slf4j;
+
 import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.config.ConfigManager;
@@ -13,167 +11,162 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
 
+import javax.inject.Inject;
 import java.util.HashMap;
 
 @Slf4j
-@PluginDescriptor(
-        name = "Zeah RC Tracker"
-)
-public class ZeahRCTrackerPlugin extends Plugin {
+@PluginDescriptor(name = "Zeah RC Tracker")
+public class ZeahRCTrackerPlugin extends Plugin
+{
+	private HashMap<Integer, Integer> sessionTracking;
 
-    public boolean isBloodRunecrafting;
-    public boolean isSoulRunecrafting;
+	private int bloodRunesCrafted;
+	private int soulRunesCrafted;
+	public boolean isBloodRunecrafting;
+	public boolean isSoulRunecrafting;
+	public final int bloodRuneID = 565;
+	public final int soulRuneID = 566;
 
-    public HashMap<Integer, Integer> sessionTrackingCurrent;
+	@Inject
+	private Client client;
 
-    @Inject
-    private Client client;
+	@Inject
+	private OverlayManager overlayManager;
 
-    @Inject
-    private ConfigManager configManager;
+	@Inject
+	private ZeahRCTrackerOverlay overlay;
 
-    @Inject
-    private OverlayManager overlayManager;
+	@Override
+	protected void startUp() throws Exception
+	{
+		log.info("ZeahRCTracker started!");
+		sessionTracking = new HashMap<>();
+		bloodRunesCrafted = 0;
+		soulRunesCrafted = 0;
+		overlayManager.add(overlay);
+	}
 
-    @Inject
-    private ZeahRCTrackerOverlay overlay;
+	@Override
+	protected void shutDown() throws Exception
+	{
+		log.info("ZeahRCTracker stopped!");
+		overlayManager.remove(overlay);
+	}
 
-    @Inject
-    private ZeahRCTrackerConfig config;
+	@Subscribe
+	public void onItemContainerChanged(ItemContainerChanged event)
+	{
 
-    @Override
-    protected void startUp() throws Exception {
-        log.info("ZeahRCTracker by Waldxn started!");
-        sessionTrackingCurrent = new HashMap<>();
-        overlayManager.add(overlay);
-    }
+		//Load to hashmap on login
+		if (sessionTracking.isEmpty())
+		{
+			ItemContainer container = client.getItemContainer(InventoryID.INVENTORY);
 
-    @Override
-    protected void shutDown() throws Exception {
-        log.info("ZeahRCTracker by Waldxn stopped!");
-        overlayManager.remove(overlay);
-    }
+			if (container == null)
+			{
+				return;
+			}
 
-    @Subscribe
-    public void onItemContainerChanged(ItemContainerChanged event) {
-        //Prevents runes being tracked falsely on login (if in zeah)
-        boolean initialLogin = false;
+			if (!container.contains(bloodRuneID))
+			{
+				sessionTracking.put(bloodRuneID, 0);
+			}
+			if (!container.contains(soulRuneID))
+			{
+				sessionTracking.put(soulRuneID, 0);
+			}
 
-        //Set defaults
-        if (getCraftedRunes(566) == null || getCraftedRunes(565) == null) {
-            if (getCraftedRunes(566) == null) {
-                setCraftedRunes(566, 0);
-            } else if (getCraftedRunes(565) == null) {
-                setCraftedRunes(565, 0);
-            }
-        }
+			for (int i = 0; i <= 27; i++)
+			{
+				if (container.getItem(i) != null && (container.getItem(i).getId() == bloodRuneID || container.getItem(i).getId() == soulRuneID))
+				{
+					sessionTracking.put(container.getItem(i).getId(), container.getItem(i).getQuantity());
+				}
+			}
+			return;
+		}
 
-        //Load to hashmap on login
-        if (sessionTrackingCurrent.isEmpty()) {
-            for (int i = 0; i <= 27; i++) {
-                ItemContainer container = client.getItemContainer(InventoryID.INVENTORY);
+		//Runecrafting event
+		if (event.getItemContainer().contains(bloodRuneID) || event.getItemContainer().contains(soulRuneID))
+		{
+			//Region check (Blood/Soul altar regions)
+			boolean inZeah = false;
+			int region = client.getLocalPlayer().getWorldLocation().getRegionID();
+			if (region == 6715 || region == 7228)
+			{
+				inZeah = true;
+			}
 
-                if (container.getItem(i) != null) {
-                    sessionTrackingCurrent.put(container.getItem(i).getId(), container.getItem(i).getQuantity());
-                } else {
-                    sessionTrackingCurrent.put(565, 0);
-                    sessionTrackingCurrent.put(566, 0);
-                }
-                initialLogin = true;
-            }
-        }
+			//Prevents tracker from including runes outside zeah
+			if (!inZeah)
+			{
+				if (!event.getItemContainer().contains(bloodRuneID) && !event.getItemContainer().contains(soulRuneID))
+				{
+					return;
+				}
 
-        //Runecrafting event
-        if (event.getItemContainer().contains(565) || event.getItemContainer().contains(566)) {
+				for (Item i : event.getItemContainer().getItems())
+				{
+					if (i.getId() == bloodRuneID)
+					{
+						sessionTracking.replace(bloodRuneID, i.getQuantity());
+					}
 
-            boolean inZeah = false;
-            int region = client.getLocalPlayer().getWorldLocation().getRegionID();
-            if (region == 6715 || region == 7228) {
-                inZeah = true;
-            }
+					if (i.getId() == soulRuneID)
+					{
+						sessionTracking.replace(soulRuneID, i.getQuantity());
 
-            //Prevents tracker from including runes outside zeah
-            if (!inZeah) {
-                if (event.getItemContainer().contains(565)) {
-                    for (Item i : event.getItemContainer().getItems()) {
-                        if (i.getId() == 565) {
-                            sessionTrackingCurrent.replace(565, i.getQuantity());
-                        }
-                    }
-                } else if (event.getItemContainer().contains(566)) {
-                    for (Item i : event.getItemContainer().getItems()) {
-                        if (i.getId() == 566) {
-                            sessionTrackingCurrent.replace(566, i.getQuantity());
-                        }
-                    }
-                }
-            }
+					}
+				}
+				return;
+			}
 
-            if (inZeah && !initialLogin) {
-                for (Item i : event.getItemContainer().getItems()) {
-                    if (i.getId() == 565 && config.bloodCheckbox()) {
-                        if (!(sessionTrackingCurrent.containsKey(i.getId()))) {
-                            //When a player runecrafts from a clear inventory
-                            sessionTrackingCurrent.put(i.getId(), i.getQuantity());
-                            setCraftedRunes(565, i.getQuantity());
-                            isBloodRunecrafting = true;
-                        }
-                        if (sessionTrackingCurrent.get(i.getId()) != i.getQuantity()) {
-                            if (getCraftedRunes(565) == null) {
-                                //If config doesn't have data already, create it
-                                setCraftedRunes(565, (i.getQuantity() - sessionTrackingCurrent.get(565)));
-                                sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
-                            } else {
-                                //Updates the amount of runes crafted
-                                setCraftedRunes(565, (i.getQuantity() - sessionTrackingCurrent.get(565)) + getCraftedRunes(565));
-                                sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
-                            }
-                            isBloodRunecrafting = true;
-                        }
-                    } else if (i.getId() == 566 && config.soulCheckbox()) {
-                        if (!(sessionTrackingCurrent.containsKey(i.getId()))) {
-                            //When a player runecrafts from a clear inventory
-                            sessionTrackingCurrent.put(i.getId(), i.getQuantity());
-                            setCraftedRunes(566, i.getQuantity());
-                            isSoulRunecrafting = true;
-                        }
-                        if (sessionTrackingCurrent.get(i.getId()) != i.getQuantity()) {
-                            if (getCraftedRunes(566) == null) {
-                                //If config doesn't have data already, create it
-                                setCraftedRunes(566, (i.getQuantity() - sessionTrackingCurrent.get(566)));
-                                sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
-                            } else {
-                                //Updates the amount of runes crafted
-                                setCraftedRunes(566, (i.getQuantity() - sessionTrackingCurrent.get(566)) + getCraftedRunes(566));
-                                sessionTrackingCurrent.replace(i.getId(), i.getQuantity());
-                            }
-                            isSoulRunecrafting = true;
-                        }
-                    }
-                }
-            }
-        }
-    }
+			//Final checks
+			for (Item i : event.getItemContainer().getItems())
+			{
+				if (i.getId() == bloodRuneID)
+				{
+					if (sessionTracking.get(i.getId()) != i.getQuantity())
+					{
+						//Updates the amount of runes crafted
+						bloodRunesCrafted = bloodRunesCrafted + (i.getQuantity() - sessionTracking.get(bloodRuneID));
+						sessionTracking.replace(i.getId(), i.getQuantity());
+						isBloodRunecrafting = true;
+						isSoulRunecrafting = false;
+					}
+				}
+				else if (i.getId() == soulRuneID)
+				{
+					if (sessionTracking.get(i.getId()) != i.getQuantity())
+					{
+						//Updates the amount of runes crafted
+						soulRunesCrafted = soulRunesCrafted + (i.getQuantity() - sessionTracking.get(soulRuneID));
+						sessionTracking.replace(i.getId(), i.getQuantity());
+						isSoulRunecrafting = true;
+						isBloodRunecrafting = false;
+					}
+				}
+			}
+		}
+	}
 
-    private void setCraftedRunes(int itemId, double quantity) {
-        if (itemId == 565) {
-            configManager.setRSProfileConfiguration("zeahrctracker", "bloods", quantity);
-        } else if (itemId == 566) {
-            configManager.setRSProfileConfiguration("zeahrctracker", "souls", quantity);
-        }
-    }
 
-    public Double getCraftedRunes(Integer itemId) {
-        if (itemId == 565) {
-            return configManager.getRSProfileConfiguration("zeahrctracker", "bloods", double.class);
-        } else if (itemId == 566) {
-            return configManager.getRSProfileConfiguration("zeahrctracker", "souls", double.class);
-        }
-        return null;
-    }
+	public Integer getCraftedRunes(Integer itemId)
+	{
+		if (itemId == bloodRuneID)
+		{
+			return bloodRunesCrafted;
+		}
+		else if (itemId == soulRuneID)
+		{
+			return soulRunesCrafted;
+		}
+		return null;
+	}
 
-    @Provides
-    ZeahRCTrackerConfig provideConfig(ConfigManager configManager) {
-        return configManager.getConfig(ZeahRCTrackerConfig.class);
-    }
+	@Provides
+	ZeahRCTrackerConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(ZeahRCTrackerConfig.class);
+	}
 }
