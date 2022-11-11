@@ -1,7 +1,6 @@
 package com.zeahrctracker;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
 import net.runelite.api.MenuAction;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
