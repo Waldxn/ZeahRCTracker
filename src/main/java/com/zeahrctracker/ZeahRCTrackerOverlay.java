@@ -115,10 +115,16 @@ public class ZeahRCTrackerOverlay extends OverlayPanel
 		String string = String.valueOf(number);
 		StringBuilder sb;
 
-		if (number >= 1000 && number < 100000)
+		if (number >= 1000 && number < 10000)
 		{
 			sb = new StringBuilder(string);
 			sb.insert(1, ",");
+			return sb.toString();
+		}
+		else if (number >= 10000 && number < 100000)
+		{
+			sb = new StringBuilder(string);
+			sb.insert(2, ",");
 			return sb.toString();
 		}
 		else if (number >= 100000 && number < 1000000)
