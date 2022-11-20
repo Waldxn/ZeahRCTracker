@@ -3,7 +3,10 @@ package com.zeahrctracker;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 
-import net.runelite.api.*;
+import net.runelite.api.Client;
+import net.runelite.api.InventoryID;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -43,6 +46,8 @@ public class ZeahRCTrackerPlugin extends Plugin
 		sessionTracking = new HashMap<>();
 		bloodRunesCrafted = 0;
 		soulRunesCrafted = 0;
+		isBloodRunecrafting = false;
+		isSoulRunecrafting = false;
 		overlayManager.add(overlay);
 	}
 
@@ -143,7 +148,6 @@ public class ZeahRCTrackerPlugin extends Plugin
 			}
 		}
 	}
-
 
 	public Integer getCraftedRunes(int itemId)
 	{

@@ -1,6 +1,11 @@
 package com.zeahrctracker;
 
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics2D;
 import lombok.extern.slf4j.Slf4j;
+import javax.inject.Inject;
+
 import net.runelite.api.MenuAction;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
@@ -8,9 +13,6 @@ import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
-
-import javax.inject.Inject;
-import java.awt.*;
 
 @Slf4j
 public class ZeahRCTrackerOverlay extends OverlayPanel
@@ -86,78 +88,55 @@ public class ZeahRCTrackerOverlay extends OverlayPanel
 	{
 		String string = String.valueOf(number);
 		StringBuilder sb = new StringBuilder(string);
-		if (number >= 1000 && number < 10000)
+
+		switch (string.length())
 		{
-			sb.insert(1, ",");
-			return sb.toString();
+			case 4:
+				sb.insert(1, ",");
+				return sb.toString();
+			case 5:
+				sb.insert(2, ",");
+				return sb.toString();
+			case 6:
+				sb.insert(3, ",");
+				return sb.toString();
+			default:
+				return string;
 		}
-		else if (number >= 10000 && number < 100000)
-		{
-			sb.insert(2, ",");
-			return sb.toString();
-		}
-		else if (number >= 100000 && number < 1000000)
-		{
-			sb.insert(3, ",");
-			return sb.toString();
-		}
-		else if (number >= 1000000)
-		{
-			sb.insert(4, ",");
-			sb.insert(1, ",");
-			return sb.toString();
-		}
-		return string;
 	}
 
 	private String convertGP(int number)
 	{
 		String string = String.valueOf(number);
 		StringBuilder sb;
+		int length = string.length();
 
-		if (number >= 1000 && number < 10000)
-		{
-			sb = new StringBuilder(string);
-			sb.insert(1, ",");
-			return sb.toString();
-		}
-		else if (number >= 10000 && number < 100000)
-		{
-			sb = new StringBuilder(string);
-			sb.insert(2, ",");
-			return sb.toString();
-		}
-		else if (number >= 100000 && number < 1000000)
-		{
-			return string.substring(0, 3) + "K";
-		}
-		else if (number >= 1000000 && number < 10000000)
+		if (length >= 7)
 		{
 			string = string.substring(0, 3);
-			sb = new StringBuilder(string);
-			sb.insert(1, ".");
-			sb.append("M");
-			return sb.toString();
 		}
-		else if (number >= 10000000 && number < 100000000)
+		sb = new StringBuilder(string);
+
+		switch (length)
 		{
-			string = string.substring(0, 3);
-			sb = new StringBuilder(string);
-			sb.insert(2, ".");
-			sb.append("M");
-			return sb.toString();
+			case 4:
+				sb.insert(1, ",");
+				return sb.toString();
+			case 5:
+				sb.insert(2, ",");
+				return sb.toString();
+			case 6:
+				return string.substring(0, 3) + "K";
+			case 7:
+				sb.insert(1, ".");
+				sb.append("M");
+				return sb.toString();
+			case 8:
+				sb.insert(2, ".");
+				sb.append("M");
+				return sb.toString();
+			default:
+				return string;
 		}
-		else if (number >= 100000000 && number < 1000000000)
-		{
-			string = string.substring(0, 3);
-			sb = new StringBuilder(string);
-			sb.append("M");
-			return sb.toString();
-		}
-		else if (number >= 1000000000)
-		{
-			return "Lots!";
-		}
-		return string;
 	}
 }
