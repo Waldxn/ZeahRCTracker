@@ -105,16 +105,15 @@ public class ZeahRCTrackerPlugin extends Plugin
 			//Prevents tracker from including runes outside zeah
 			if (!inZeah)
 			{
-				for (Item i : event.getItemContainer().getItems())
-				{
-					if (i.getId() == bloodRuneID)
-					{
-						sessionTracking.replace(bloodRuneID, i.getQuantity());
-					}
+				if (event.getItemContainer().getId() == InventoryID.INVENTORY.getId()) {
+					for (Item i : event.getItemContainer().getItems()) {
+						if (i.getId() == bloodRuneID) {
+							sessionTracking.replace(bloodRuneID, i.getQuantity());
+						}
 
-					if (i.getId() == soulRuneID)
-					{
-						sessionTracking.replace(soulRuneID, i.getQuantity());
+						if (i.getId() == soulRuneID) {
+							sessionTracking.replace(soulRuneID, i.getQuantity());
+						}
 					}
 				}
 				return;
