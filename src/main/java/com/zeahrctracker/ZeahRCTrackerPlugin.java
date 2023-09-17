@@ -107,6 +107,7 @@ public class ZeahRCTrackerPlugin extends Plugin
 			{
 				sessionTracking.replace(bloodRuneID, 0);
 				sessionTracking.replace(soulRuneID, 0);
+				return;
 			}
 
 			//Final checks
